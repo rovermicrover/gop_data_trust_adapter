@@ -8,12 +8,32 @@ module GopDataTrustAdapter
 
     class << self
 
+      @@default_token = ENV["GopDataTrustToken"]
+
+      def default_token
+        @@default_token
+      end
+
+      def default_token= value
+        @@default_token = value
+      end
+
+      @@default_production = ENV["GopDataTrustProduction"]
+
+      def default_production?
+        @@default_production
+      end
+
+      def default_production= value
+        @@default_production = value
+      end
+
       # For Thread Safety Must Reconnect On Every New Thread
       def connect options={}
 
         Thread.current["GopDataTrust/Api/@@test"] = options[:test]
-        Thread.current["GopDataTrust/Api/@@token"] = (options[:token] || ENV["GopDataTrustToken"])
-        if options[:production].eql?(true) || (options[:production].nil? && ENV["GopDataTrustProduction"])
+        Thread.current["GopDataTrust/Api/@@token"] = (options[:token] || self.default_token)
+        if options[:production].eql?(true) || (options[:production].nil? && self.default_production?)
           Thread.current["GopDataTrust/Api/@@base_url"] = "https://www.gopdatatrust.com/v2/api/"
         else
           Thread.current["GopDataTrust/Api/@@base_url"] = "https://lincoln.gopdatatrust.com/v2/api/"
@@ -90,17 +110,20 @@ module GopDataTrustAdapter
         get 'query.php', params
       end
 
-      def find first_name, last_name, params={}
+      # firstname lastname required
+      def fast_match params={}
+        dob = (params[:dateofbirth] || params[:date_of_birth])
+        opts = {:single_quoted => false}
         params = {
           :query => {
             "ClientToken" => self.token,
-            "FirstName" => first_name,
-            "MiddleName" => params[:middle_name],
-            "LastName" => last_name,
-            "ReturnFields" => (params[:return_fields] || @@default_fields),
-            "Reg_AddressZip5" => params[:zip],
-            "DateOfBirth" => params[:date_of_birth].try(:strftime, "%Y%m%d"),
-            "Limit" => (params[:limit] || 5)
+            "FirstName" => Type::String.safe_value(params[:firstname] || params[:first_name], opts),
+            "MiddleName" => Type::String.safe_value(params[:middlename] || params[:middle_name], opts),
+            "LastName" => Type::String.safe_value(params[:lastname] || params[:last_name], opts),
+            "ReturnFields" => (params[:return_fields] || Table.default_fields),
+            "Reg_AddressZip5" => Type::String.safe_value(params[:reg_addresszip5] || params[:zip], opts),
+            "DateOfBirth" => Type::Date.safe_value(dob, opts.merge(:format => :no_dash)),
+            "Limit" => Type::Number.safe_value(params[:limit] || 5)
           }
         }
         get 'fast_match.php', params
@@ -121,13 +144,14 @@ module GopDataTrustAdapter
       #############
       #Write Methods
       def add_tag key, params={}
+        opts = {:single_quoted => false}
         params = {
           :body => {
             "ClientToken" => self.token,
-            "PersonKey" => key,
-            "ElementYear" => params[:year],
-            "ElementName" => params[:name],
-            "ElementDescription" => params[:desc]
+            "PersonKey" => Type::String.safe_value(key, opts),
+            "ElementYear" => Type::Number.safe_value(params[:year], opts),
+            "ElementName" => Type::String.safe_value(params[:name], opts),
+            "ElementDescription" => Type::String.safe_value(params[:desc], opts)
           }
         }
 
@@ -135,18 +159,24 @@ module GopDataTrustAdapter
       end
 
       def add_voter_contact key_type, key, params={}
+        opts = {:single_quoted => false}
+        if (params[:date_time] || params[:datetime])
+          date_time = Type::DateTime.new(params[:date_time] || params[:datetime]).value
+          params[:date] = date_time.to_date
+          params[:time] = date_time.strftime("%H:%M:%S")
+        end
         params = {
           :body => {
-            "ClientToken" => self.token,
-            "ContactType" => params[:type],
-            "ContactDisposition" => params[:disposition],
-            "ContactDate" => params[:date],
-            "ContactTime" => params[:time],
-            key_type => key,
-            "StateAbbreviation" => params[:state_abbreviation],
-            "OfficeName" => params[:office_name],
-            "InitiativeName" => params[:initiative_name],
-            "UniverseName" => params[:universe_name]
+            "ClientToken" => Type::String.safe_value(self.token, opts),
+            Type::String.safe_value(key_type, opts) => Type::String.safe_value(key, opts),
+            "ContactType" => Type::String.safe_value(params[:type], opts),
+            "ContactDisposition" => Type::String.safe_value(params[:disposition], opts),
+            "ContactDate" => Type::Date.safe_value(params[:date], opts),
+            "ContactTime" => Type::String.safe_value(params[:time], opts),
+            "StateAbbreviation" => Type::String.safe_value(params[:state_abbreviation], opts),
+            "OfficeName" => Type::String.safe_value(params[:office_name], opts),
+            "InitiativeName" => Type::String.safe_value(params[:initiative_name], opts),
+            "UniverseName" => Type::String.safe_value(params[:universe_name], opts)
           }
         }
 
@@ -154,22 +184,24 @@ module GopDataTrustAdapter
       end
 
       def set_email email, key
+        opts = {:single_quoted => false}
         params = {
           :query => {
             "ClientToken" => self.token,
-            "EmailAddress" => email,
-            "PersonKey" => key
+            "EmailAddress" => Type::String.safe_value(email, opts),
+            "PersonKey" => Type::String.safe_value(key, opts)
           }
         }
         put 'set_email.php', params
       end
 
       def set_phone phone, key
+        opts = {:single_quoted => false}
         params = {
           :query => {
             "ClientToken" => self.token,
-            "PhoneNumber" => phone,
-            "PersonKey" => key
+            "PhoneNumber" => Type::String.safe_value(phone, opts),
+            "PersonKey" => Type::String.safe_value(key, opts)
           }
         }
 
@@ -177,17 +209,18 @@ module GopDataTrustAdapter
       end
 
       def set_address type, key, params={}
+        opts = {:single_quoted => false}
         params = {
           :query => {
             "ClientToken" => self.token,
-            "AddressType" => type,
-            "VoterKey" => key,
-            "AddressLine1" => params[:address_1],
-            "AddressLine2" => params[:address_2],
-            "AddressCity" => params[:city],
-            "AddressState" => params[:state],
-            "AddressZip5" => params[:zip5],
-            "AddressZip4" => params[:zip4]
+            "AddressType" => Type::String.safe_value(type, opts),
+            "VoterKey" => Type::String.safe_value(key, opts),
+            "AddressLine1" => Type::String.safe_value(params[:address_1], opts),
+            "AddressLine2" => Type::String.safe_value(params[:address_2], opts),
+            "AddressCity" => Type::String.safe_value(params[:city], opts),
+            "AddressState" => Type::String.safe_value(params[:state], opts),
+            "AddressZip5" => Type::String.safe_value(params[:zip5], opts),
+            "AddressZip4" => Type::String.safe_value(params[:zip4], opts)
           }
         }
 
@@ -195,20 +228,33 @@ module GopDataTrustAdapter
       end
 
       def direct_write action, field, params={}
+        opts = {:single_quoted => false}
         params = {
           :query => {
             "ClientToken" => self.token,
-            "Action" => action,
-            "PK_Field" => field,
-            "Call_ID" => params[:call_id],
-            "pk_id" => params[:pk_id],
-            "Values" => params[:values].try(:to_json),
-            "Leave_Open" => params[:leave_open],
-            "Rationale" => params[:rationale]
+            "Action" => Type::String.safe_value(action, opts),
+            "PK_Field" => Type::String.safe_value(field, opts),
+            "Call_ID" => Type::String.safe_value(params[:call_id], opts),
+            "pk_id" => Type::String.safe_value(params[:pk_id], opts),
+            "Values" => (params[:values].to_json if params[:values]),
+            "Leave_Open" => Type::String.safe_value(params[:leave_open], opts),
+            "Rationale" => Type::String.safe_value(params[:rationale], opts)
           }
         }
 
         put 'direct_write.php', params
+      end
+
+      def debug call_id
+        opts = {:single_quoted => false}
+        params = {
+          :query => {
+            "ClientToken" => self.token,
+            "Call_ID" => Type::String.safe_value(call_id, opts)
+          }
+        }
+
+        get 'get_call.php', params
       end
 
     end

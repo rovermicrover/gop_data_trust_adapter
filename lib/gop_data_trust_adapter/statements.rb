@@ -19,15 +19,6 @@ module GopDataTrustAdapter
       @limit = Statement::Limit.new(self)
     end
 
-    def to_h
-      {
-        :select => self.select,
-        :where => self.where,
-        :group_by => self.group_by,
-        :limit => self.limit
-      }
-    end
-
     def dup
       the_dup = self.class.new(self.query)
       the_dup.instance_variable_set(:@select, self.select.dup)

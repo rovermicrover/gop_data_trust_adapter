@@ -28,7 +28,10 @@ module GopDataTrustAdapter
               attributes[:value] = arg
             end
 
-            klass_sanitizer = GopDataTrustAdapter::Table.class_conversion(attributes[:value])
+            klass_sanitizer = GopDataTrustAdapter::Table.class_conversion.values_at(*attributes[:value].class.ancestors).compact.first
+
+            klass_sanitizer ||= GopDataTrustAdapter::Table.class_conversion_default
+
             sanitizer = klass_sanitizer.new(attributes)
 
             columns_values.sub!("?", sanitizer.safe_value)

@@ -9,22 +9,26 @@ module GopDataTrustAdapter
       def sanitize
 
         case self.value
-        when BigDecimal, Float, Integer
-          @value = Time.at(self.value).to_date
-        when String
-          @value = Date.strptime(value, '%Y-%m-%d %H:%M:%S.%L')
-        when Time, DateTime
-          @value = self.value.to_date
-        when Date
+        when ::Numeric
+          @value = ::DateTime.jd(self.value)
+        when ::String
+          @value = ::DateTime.strptime(self.value, '%Y-%m-%d %H:%M:%S.%L')
+        when ::Time
+          @value = ::DateTime.parse(self.value.to_s)
+        when ::Date
+          @value = self.value.to_datetime
+        when ::DateTime
           # Do Nothing in Correct Format
         else
-          @value = Date.today
+          @value = ::DateTime.now
         end
 
       end
 
       def safe_value
-        self.value.strftime("'%Y-%m-%d %H:%M:%S.%L'")
+        unless self.value.nil?
+          self.single_quoter_switch(self.value.strftime("%Y-%m-%d %H:%M:%S.%L"))
+        end
       end
 
     end

@@ -5,12 +5,12 @@ require 'gop_data_trust_adapter/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "gop_data_trust_adapter"
-  spec.date             = '2014-04-17'
+  spec.date          = '2015-05-14'
   spec.version       = GopDataTrustAdapter::VERSION
   spec.authors       = ["Andrew Rove"]
   spec.email         = ["andrew.m.rove@gmail.com"]
   spec.summary       = %q{GOP Data Trust's Direct API Adapter.}
-  spec.description   = %q{An ActiveRecord like adapter for the GOP Data Trust's Direct API.}
+  spec.description   = %q{An ActiveRecord like adapter for the GOP Data Trust's Direct API. https://lincoln.gopdatatrust.com/v2/docs/}
   spec.homepage      = "http://rubygems.org/gems/gop_data_trust_adapter"
   spec.license       = "MIT"
 
@@ -21,8 +21,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.7"
   spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "sqlite3", ">= 1.3.8"
   spec.add_development_dependency "awesome_print"
+  spec.add_development_dependency "simplecov"
 
   spec.add_dependency 'httparty', ">= 0.10.0"
 end

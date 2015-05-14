@@ -53,10 +53,6 @@ module GopDataTrustAdapter
       the_dup
     end
 
-    def status
-      self.statements.to_h
-    end
-
     def build_query
       query = "SELECT#{self.statements.select.distinct ? ' DISTINCT' : ''} #{self.statements.select.safe_statement}"
 
@@ -79,10 +75,14 @@ module GopDataTrustAdapter
       @response = self.api.query(self.build_query)
     end
 
+    def to_file *emails
+      @response ||= self.api.get_file(self.build_query, *emails)
+    end
+
     ############
     #Delgation to Response
     def method_missing(method, *args, &block)
-      if self.response.class.instance_methods(false).include?(method) || self.response.records.class.instance_methods.include?(method)
+      if self.response.class.instance_methods(false).include?(method) || (self.response.respond_to?(:records) && self.response.records.class.instance_methods.include?(method))
         self.response.send(method, *args, &block)
       else
         super
@@ -90,7 +90,7 @@ module GopDataTrustAdapter
     end
 
     def inspect
-      to_inspect = (self.response.try(:records) || self.response)
+      to_inspect = (self.response.respond_to?(:records) ? self.response.records : self.response)
       to_inspect.respond_to?(:awesome_inspect) ? to_inspect.awesome_inspect : to_inspect.inspect
     end
 

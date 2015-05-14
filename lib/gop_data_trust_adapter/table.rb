@@ -30,15 +30,13 @@ module GopDataTrustAdapter
     }
 
     CLASS_CONVERSION = {
-      Date => GopDataTrustAdapter::Type::Date,
       DateTime => GopDataTrustAdapter::Type::DateTime,
+      Date => GopDataTrustAdapter::Type::Date,
       Time => GopDataTrustAdapter::Type::DateTime,
       String => GopDataTrustAdapter::Type::String,
-      BigDecimal => GopDataTrustAdapter::Type::Number,
-      Float => GopDataTrustAdapter::Type::Number,
-      Integer => GopDataTrustAdapter::Type::Number
+      Numeric => GopDataTrustAdapter::Type::Number
     }
-    CLASS_CONVERSION.default(GopDataTrustAdapter::Type::String)
+    CLASS_CONVERSION_DEFAULT = GopDataTrustAdapter::Type::String
 
     # If I have the table definition, might as well
     # create a whitelist.
@@ -1695,6 +1693,10 @@ module GopDataTrustAdapter
 
     def self.class_conversion
       CLASS_CONVERSION
+    end
+
+    def self.class_conversion_default
+      CLASS_CONVERSION_DEFAULT
     end
 
     def self.default_fields

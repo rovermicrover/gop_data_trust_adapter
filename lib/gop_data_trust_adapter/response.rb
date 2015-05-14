@@ -1,3 +1,5 @@
+require 'gop_data_trust_adapter/record'
+
 module GopDataTrustAdapter
 
   class Response
@@ -5,16 +7,13 @@ module GopDataTrustAdapter
     attr_reader :api, :response, :debug_results,
                 :body, :error, :success,
                 :call_id, :results, :num,
-                :more, :pk_id, :header, :records
+                :more, :pk_id, :header, :records,
+                :contact_key
 
     def initialize(_api, _response)
       @api = _api
       @response = _response
-      if response.parsed_response.is_a?(String)
-        @body = JSON.parse(response.body)
-      else
-        @body = response.parsed_response
-      end
+      @body = JSON.parse(response.body) if response.body
       @header = response.header
       @error = @body["Error"]
       @success = @body["Success"]
@@ -23,35 +22,20 @@ module GopDataTrustAdapter
       @num = @body["Results_Count"]
       @more = @body["More_Results"]
       @pk_id = @body["PK_ID"]
+      @contact_key = @body["ContactKey"]
 
       @records = []
       @body["Results"].to_a.each do |r|
-        @records << OpenStruct.new(r)
+        @records << Record.new(api, r)
       end
     end
 
     def debug
       if debug_results.nil? && !@error.nil?
-        params = {
-          :query => {
-            "ClientToken" => api.token,
-            "Call_ID" => call_id
-          }
-        }
-        debug_response = HTTParty.get(api.base_url + 'get_call.php', params)
-        temp_debug_results = debug_response.parsed_response
-        if temp_debug_results["Error"]
-          debug_results = @error
-        else
-          if temp_debug_results.is_a?(String)
-            debug_results = JSON.parse(temp_debug_results)
-          else
-            debug_results = temp_debug_results
-          end
-        end
+        api.debug(self.call_id)
+      else
+        nil
       end
-
-      debug_results
     end
 
     def success?
@@ -59,7 +43,7 @@ module GopDataTrustAdapter
     end
 
     def fail?
-      !success?
+      !success? || !error.nil?
     end
 
     ############
