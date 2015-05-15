@@ -7,39 +7,47 @@ end
 require 'minitest/autorun'
 require 'gop_data_trust_adapter'
 
+# All sleep statements are to make sure we don't
+# hit a rate limit while testing. They don't currently
+# have one on the test server, but better safe than sorry.
+#
+# All requests to them also will fail because no token is
+# present here for secruity reasons.
+#
+# So, all response testing is done based on previous results.
 class GopDataTrustAdapterTest < Minitest::Test
+
+  # def initialize(name = nil)
+  #   @test_name = name
+  #   super(name) unless name.nil?
+  # end
+
   def connect
-    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder", :test => true)
+    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder")
   end
 
   def setup
     connect
   end
 
-  def teardown
-    @query = nil
-    @post = nil
-    @target = nil
-  end
-
   def get_results
+    # Query mean's it a get or put
     if !@query.nil?
       @target = @query
       message_target = :query
     elsif !@post.nil?
+    # Post mean's its a post
       @target = @post
       message_target = :body
     end
 
-    begin
-      @target_url = @target.response[0]
-      @target_hash = @target.response[1][message_target]
-      @target_string = @target.response[1][message_target]["q"]
-    rescue NoMethodError
-      @target_url = @target[0]
-      @target_hash = @target[1][message_target]
-      @target_string = @target[1][message_target]["q"]
+    if @target.is_a? GopDataTrustAdapter::Query
+      @target = @target.request
     end
+
+    @target_url = @target.method
+    @target_hash = @target.params[message_target]
+    @target_string = @target.params[message_target]["q"] if @target_hash
   end
 
   def assert_url_ends_with value
@@ -49,7 +57,7 @@ class GopDataTrustAdapterTest < Minitest::Test
 
   def assert_query_hash_value_is_present key, value=nil
     get_results
-    assert @target_hash[key]
+    assert @target_hash[key], "Key '#{key}' wasn't present" + @target_hash.to_s
     assert_equal(value, @target_hash[key]) if value
   end
 
@@ -62,10 +70,10 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_api_connection_urls
-    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder", :test => true, :production => true)
+    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder", :production => true)
     assert_equal "https://www.gopdatatrust.com/v2/api/", GopDataTrustAdapter::Api.base_url
 
-    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder", :test => true)
+    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder")
     assert_equal "https://lincoln.gopdatatrust.com/v2/api/", GopDataTrustAdapter::Api.base_url
   end
 
@@ -80,27 +88,12 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert_equal false, GopDataTrustAdapter::Api.default_production?
   end
 
-  # This will result in an error returned, but thats fine we just want to make sure
-  # that each http method results in a successful response request not response.
-  # Sleep is needed so we don't barrage them. :-/
-  def test_that_http_method_is_called
-    GopDataTrustAdapter::Api.connect(:token => "ATokenPlaceHolder")
-    # Get
-    assert GopDataTrustAdapter::Api.where(:firstname => "John").fail?
-    sleep 0.2
-    # Post
-    assert GopDataTrustAdapter::Api.where(:firstname => "John").to_file.fail?
-    sleep 0.2
-    # Put
-    assert GopDataTrustAdapter::Api.set_email("foobar@example.com","Foobar").fail?
-    sleep 0.2
-  end
-
-  ##############
+  #############
   # Query TESTS
-  def test_api_to_query_delegation
-    assert GopDataTrustAdapter::Api.where(:firstname => "John")
-
+  def test_api_delegation
+    # Method that doesn't exist on response or it's
+    # records attribute shouldn't cause a no method error.
+    # When called from api.
     no_method_error = false
 
     begin
@@ -110,26 +103,135 @@ class GopDataTrustAdapterTest < Minitest::Test
     end
 
     assert no_method_error
+
+    # Make sure that the Api class only responds to its class methods
+    # and Query class instance methods.
+    refute GopDataTrustAdapter::Api.respond_to?(:foobar)
+    assert GopDataTrustAdapter::Api.respond_to?(:where)
+    refute GopDataTrustAdapter::Api.respond_to?(:fail?)
+    refute GopDataTrustAdapter::Api.respond_to?(:each)
+
   end
 
-  def test_query_to_response_delegation
+  def test_query_delegation
+
+    # A method called on api that is an instance method on query should
+    # result in a query being created and returned with passed method
+    # and arugments called on it.
     @query = GopDataTrustAdapter::Api.where(:firstname => "John")
+    assert @query.is_a? GopDataTrustAdapter::Query
 
-    assert @query.length
+    # Should make request because query has no method length, but response's
+    # record response to it. Thus create a request, make it, then delegate
+    # the method to the response object, which in return delegates it
+    # to it's records, ie an array for now.
+    assert_equal 0, @query.length
+    assert_equal true, @query.fail?
+    sleep 1
 
+    # Method that doesn't exist on response or records should result
+    # in a no method error.
     no_method_error = false
-
     begin
       @query.foobar
     rescue NoMethodError
       no_method_error = true
     end
+    assert no_method_error
+
+    # Make sure that the query object responds
+    # to it's instance methods and the instance
+    # methods of it's response and the response's
+    # records attribute, an array. But not instance
+    # methods of it's request.
+    refute @query.respond_to?(:foobar)
+    assert @query.respond_to?(:fail?)
+    assert @query.respond_to?(:each)
+    refute @query.respond_to?(:get_response)
+  end
+
+  def test_request_delegation
+
+    # Basic api method should result in a request object
+    @request = GopDataTrustAdapter::Api.set_email("foobar@example.com","Foobar")
+    assert @request.is_a? GopDataTrustAdapter::Request
+    # Any undified method call should result in retriving the response
+    assert_equal true, @request.fail?
+    sleep 1
+
+    # Method that doesn't exist on response or it's
+    # records attribute shouldn't cause a no method error.
+    # When called from request.
+    no_method_error = false
+
+    begin
+      @request.foobar
+    rescue NoMethodError
+      no_method_error = true
+    end
 
     assert no_method_error
+
+    # Make sure that the request object responds
+    # to it's instance methods and the instance
+    # methods of it's response and the response's
+    # records attribute, an array.
+    refute @request.respond_to?(:foobar)
+    assert @request.respond_to?(:fail?)
+    assert @request.respond_to?(:each)
+
+  end
+
+  def test_response_delgation
+    @response = GopDataTrustAdapter::Response.new(GopDataTrustAdapter::Api, SUCCESSFUL_RESPONSE)
+    assert @response.is_a? GopDataTrustAdapter::Response
+
+    # Method that doesn't exist on response or records shoudl result
+    # in a no method error.
+    no_method_error = false
+    begin
+      @response.foobar
+    rescue NoMethodError
+      no_method_error = true
+    end
+    assert no_method_error
+
+    # Make sure that the response object responds
+    # to it's instance methods of it's records attribute,
+    # an array.
+    refute @response.respond_to?(:foobar)
+    assert @response.respond_to?(:fail?)
+    assert @response.respond_to?(:each)
+  end
+
+  def test_reload_returns_new_response
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John")
+
+    @response1 = @query.response
+    assert_equal @response1, @query.response
+    sleep 1
+
+    @response2 = @query.reload
+    refute_equal @response1, @query.response
+    refute_equal @response1, @response2
+    sleep 1
+
+    @request = GopDataTrustAdapter::Api.set_email("foobar@example.com","Foobar")
+    assert @request.is_a? GopDataTrustAdapter::Request
+
+    @response1 = @request.response
+    assert_equal @response1, @request.response
+    sleep 1
+
+    @response2 = @request.reload
+    refute_equal @response1, @request.response
+    refute_equal @response1, @response2
+    sleep 1
   end
 
   def test_query_inspect
     assert GopDataTrustAdapter::Api.where(:firstname => "John").inspect
+    sleep 1
   end
 
   def test_query_where
@@ -235,13 +337,15 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert !@query1.object_id.eql?(@query3.object_id)
   end
 
-  def test_query_reload
-    # Make sure that a @query for a attribute creates the create sql
+  def test_query_to_file
     @query = GopDataTrustAdapter::Api.where(:firstname => "John")
-    assert_query_contains("WHERE firstname = 'John' LIMIT 5")
 
-    @query.reload
-    assert_query_contains("WHERE firstname = 'John' LIMIT 5")
+    @file_query = @query.to_file
+    assert @file_query.is_a? GopDataTrustAdapter::Response
+
+    assert_equal true, @file_query.fail?
+    refute_equal @query, @file_query
+    sleep 1
   end
 
   def test_sql_injection_escape
@@ -374,9 +478,9 @@ class GopDataTrustAdapterTest < Minitest::Test
   def assert_debug_succesful call_id
     @debug = @response.debug
     assert @debug
-    assert @debug[0].end_with?("get_call.php")
-    assert @debug[1][:query]["Call_ID"]
-    assert_equal call_id, @debug[1][:query]["Call_ID"]
+    assert @debug.method.end_with?("get_call.php")
+    assert @debug.params[:query]["Call_ID"]
+    assert_equal call_id, @debug.params[:query]["Call_ID"]
   end
 
   def test_response_success
@@ -405,20 +509,6 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert @response.fail?, "was not considered failure"
 
     assert_debug_succesful "5553be65634816d44403d4e8"
-  end
-
-  def test_response_to_results_delgation
-    @response = GopDataTrustAdapter::Response.new(GopDataTrustAdapter::Api, SUCCESSFUL_RESPONSE)
-
-    assert @response.length
-
-    no_method_error = false
-    begin
-      @response.foobar
-    rescue NoMethodError
-      no_method_error = true
-    end
-    assert no_method_error
   end
   ##############
 
@@ -475,11 +565,11 @@ class GopDataTrustAdapterTest < Minitest::Test
   # Get File TESTS
   def test_to_file
     # Make sure that a @query for a attribute creates the create sql
-    @query = GopDataTrustAdapter::Api.where(:firstname => "John").to_file
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John").file_request
     assert_query_contains("WHERE firstname = 'John' LIMIT 5", true)
 
     # Make sure that a @query for a attribute creates the create sql
-    @query = GopDataTrustAdapter::Api.where(:firstname => "John", :lastname => "Smith").to_file
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John", :lastname => "Smith").file_request
     assert_query_contains("WHERE firstname = 'John' AND lastname = 'Smith' LIMIT 5", true)
   end
   ##############

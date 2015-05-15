@@ -1,5 +1,8 @@
 module GopDataTrustAdapter
 
+  ##
+  #
+  # Class that wraps a returned record from DataTrust
   class Record
 
     attr_reader :attributes, :api

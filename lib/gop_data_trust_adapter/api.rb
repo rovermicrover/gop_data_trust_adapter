@@ -1,8 +1,13 @@
 require 'gop_data_trust_adapter/table'
 require 'gop_data_trust_adapter/query'
+require 'gop_data_trust_adapter/request'
 require 'gop_data_trust_adapter/response'
 
 module GopDataTrustAdapter
+
+  ##
+  # This class is responsible for top level management of
+  # credentials, and for manging all requests.
 
   class Api
 
@@ -10,15 +15,27 @@ module GopDataTrustAdapter
 
       @@default_token = ENV["GopDataTrustToken"]
 
+      ##
+      # Gets Default Token, stored as a class varible, so aviable accross threads.
+      # Will be used when no token option is passed to connect.
+
       def default_token
         @@default_token
       end
+
+      ##
+      # Sets Default Token, stored as a class varible, so aviable accross threads.
 
       def default_token= value
         @@default_token = value
       end
 
       @@default_production = ENV["GopDataTrustProduction"]
+
+      ##
+      # Gets Default Production?, stored as a class varible, so aviable accross threads.
+      # Will be used when no production option is passed to connect.
+      # When false will use lincoln staging url, otherwise uses live data trust url
 
       def default_production?
         @@default_production
@@ -28,76 +45,133 @@ module GopDataTrustAdapter
         @@default_production = value
       end
 
+      ##
       # For Thread Safety Must Reconnect On Every New Thread
+
       def connect options={}
 
-        Thread.current["GopDataTrust/Api/@@test"] = options[:test]
-        Thread.current["GopDataTrust/Api/@@token"] = (options[:token] || self.default_token)
+        Thread.current["GopDataTrust/Api/@token"] = (options[:token] || self.default_token)
         if options[:production].eql?(true) || (options[:production].nil? && self.default_production?)
-          Thread.current["GopDataTrust/Api/@@base_url"] = "https://www.gopdatatrust.com/v2/api/"
+          Thread.current["GopDataTrust/Api/@base_url"] = "https://www.gopdatatrust.com/v2/api/"
         else
-          Thread.current["GopDataTrust/Api/@@base_url"] = "https://lincoln.gopdatatrust.com/v2/api/"
+          Thread.current["GopDataTrust/Api/@base_url"] = "https://lincoln.gopdatatrust.com/v2/api/"
         end
 
 
         nil
       end
 
+      ##
+      # Attempt to get token for API on this thread, if not present force connection
+      # based on default values, and return that value.
       def token
-        Thread.current["GopDataTrust/Api/@@token"] || connect
-        raise "Must Connect To GOP Data Trust" if Thread.current["GopDataTrust/Api/@@token"].nil?
-        Thread.current["GopDataTrust/Api/@@token"]
+        Thread.current["GopDataTrust/Api/@token"] || connect
+        raise "Must Connect To GOP Data Trust" if Thread.current["GopDataTrust/Api/@token"].nil?
+        Thread.current["GopDataTrust/Api/@token"]
       end
 
+      ##
+      # Attempt to get base_url for API on this thread, if not present force connection
+      # based on default values, and return that value.
       def base_url
-        Thread.current["GopDataTrust/Api/@@base_url"] || connect
-        raise "Must Connect To GOP Data Trust" if Thread.current["GopDataTrust/Api/@@base_url"].nil?
-        Thread.current["GopDataTrust/Api/@@base_url"]
+        Thread.current["GopDataTrust/Api/@base_url"] || connect
+        raise "Must Connect To GOP Data Trust" if Thread.current["GopDataTrust/Api/@base_url"].nil?
+        Thread.current["GopDataTrust/Api/@base_url"]
       end
 
-      def test?
-        !Thread.current["GopDataTrust/Api/@@test"].nil?
-      end
+      ##
+      #
+      # Wrapper method for http library's get method.
 
       def get method, params={}
-       self.http_request :get, method, params
+        Request.new(self, :get, method, params)
       end
+
+      ##
+      #
+      # Wrapper method for http library's post method.
 
       def post method, params={}
-        self.http_request :post, method, params
+        Request.new(self, :post, method, params)
       end
+
+      ##
+      #
+      # Wrapper method for http library's put method.
 
       def put method, params={}
-        self.http_request :put, method, params
+        Request.new(self, :put, method, params)
       end
 
-      def http_parse_args method, params={}
-        [self.base_url + method, params]
-      end
 
-      def http_request https_method, method, params={}
-        args = self.http_parse_args(method, params)
-        if self.test?
-          result = args
-        else
-          response = HTTParty.send(https_method, *args)
-          result = GopDataTrustAdapter::Response.new(self, response)
-        end
-        result
-      end
+      ##
+      #
+      #Delegation to Query class.
 
-      ############
-      #Delgation to Query
-      def method_missing(method, *args, &block)
-        if GopDataTrustAdapter::Query.instance_methods(false).include?(method)
-          GopDataTrustAdapter::Query.new(self).send(method, *args, &block)
+      def method_missing(method_name, *args, &block)
+        if Query.instance_methods(false).include?(method_name)
+          Query.new(self).send(method_name, *args, &block)
         else
           super
         end
       end
 
-      #############
-      #Read Methods
+      ##
+      #
+      #Make sure respond_to? includes deleged methods
+
+      def respond_to_missing?(method_name, include_private = false)
+        Query.instance_methods(false).include?(method_name) || super
+      end
+
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # Also for this method q is not a param but rather the first passed value
+      #
+      # From Data Trust
+      #
+      # Usage
+      #   Raw access to reading from our data warehouse. Intended to be both flexible and simple to use.
+      #   Based upon the token provided, your query will be limited to the fields and geographies you have access to.
+      #   Pages of 5,000 results are returned at a time
+      #   Maximum LIMIT is 50,000. If you'd like to get more than 50,0000 results, please see query_get_file.php
+      #
+      # Required Parameters
+      #   ClientToken
+      #   q
+      #     This parameter's value should be specified in DQL (similar to SQL).
+      #     Valid fields can be found below.
+      #     SELECT and LIMIT required. WHERE, SELECT DISTINCT, COUNT(), COUNT(DISTINCT), and GROUP BY are all supported. Note: you cannot SELECT *.
+      #     Utilize single quotes around string comparisons in WHERE statements
+      #     A properly formed call would look like: SELECT firstname,COUNT(*) WHERE ( (stateabbreviation='VA' AND congressionaldistrict='1') OR stateabbreviation='MA' ) AND lastname~'%Smith%' GROUP BY firstname LIMIT 10000
+      #     Allowed operators in a WHERE statement include =, !=, >, >=, <, <=, ~, and !~. The wildcard character for a string comparison using ~ or !~ is %.
+      #     FROM and LEFT JOIN statements are not required (or supported)
+      #     * can only be used within a count
+      #   Call_ID
+      #     If More_Results on a previous request was true, you can specify the Call_ID to continue returning results. This parameter can be specified in the place of 'q'.
+      #
+      # Optional Parameters
+      #   format
+      #     JSON (default)
+      #     CSV
+      #     XML
+      #   Dont_Wrap
+      #     returns just the result, not wrapped in a JSON container (not recommended)
+      #
+      # Returns (JSON, unless Dont_Wrap specified)
+      #   Call_ID
+      #   Success
+      #     true or false
+      #   Results
+      #     contains result (depending on format)
+      #   Results_Count
+      #     Number of results returned. For a full count of a LIMITed query, perform a separate query
+      #   More_Results
+      #     true or false
       def query q, params={}
         params = {
           :query => {
@@ -110,7 +184,43 @@ module GopDataTrustAdapter
         get 'query.php', params
       end
 
-      # firstname lastname required
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # Usage
+      #   Intended to provide a quick match identifiable information to a subset of Data Trust's voter data.
+      #   Should always return sub-second, and requests can be parallelized to complete batch operations faster.
+      #   Billed in the exact same way as a normal DQL query
+      #   If more than 5 people match your query, only personkeys will be returned
+      #
+      # Required Parameters
+      #   ClientToken
+      #   FirstName
+      #   LastName
+      #   ReturnFields
+      #     Comma delimited
+      #     Valid values: phonenumber, emailaddress, reg_addressline1, reg_addressline2, reg_addressstate, reg_addresszip5, reg_addresszip4, rnc_regid, party, rnccalcparty, statevoteridnumber, firstname, middlename, lastname, phonenumber, emailaddress, dateofbirth, sex
+      #   Limit
+      #     Limit the number of results returned
+      #
+      # Optional Parameters
+      #   Reg_AddressZip5
+      #   MiddleName
+      #     or just middle initial
+      #   DateOfBirth
+      #     YYYYMMDD or YYYYMM or YYYY
+      #
+      # Returns (JSON)
+      #   Call_ID
+      #   Success
+      #     true or false
+      #   Results
+      #   Results_Count
       def fast_match params={}
         dob = (params[:dateofbirth] || params[:date_of_birth])
         opts = {:single_quoted => false}

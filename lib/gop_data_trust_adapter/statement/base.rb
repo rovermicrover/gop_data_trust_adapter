@@ -2,6 +2,12 @@ module GopDataTrustAdapter
 
   module Statement
 
+    ##
+    #
+    # Class that handles a given statement for a query.
+    # Other statement classes inherit for this one.
+    # An example of a statement is a WHERE statement, or a
+    # SELECT statement. A query is made up of these.
     class Base
 
       attr_accessor :statement

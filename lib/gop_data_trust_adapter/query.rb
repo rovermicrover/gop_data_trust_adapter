@@ -2,6 +2,10 @@ require 'gop_data_trust_adapter/statements'
 
 module GopDataTrustAdapter
 
+
+  ##
+  #
+  # Class that handles the actually building of the quries
   class Query
 
     attr_reader :api, :statements
@@ -67,31 +71,44 @@ module GopDataTrustAdapter
       query += " LIMIT #{self.statements.limit.safe_statement}"
     end
 
-    def response
-      @response ||= self.api.query(self.build_query)
+    def request
+      @request ||= self.api.query(self.build_query)
     end
 
     def reload
-      @response = self.api.query(self.build_query)
+      @request = self.api.query(self.build_query)
+    end
+
+    def file_request *emails
+      self.api.get_file(self.build_query, *emails)
     end
 
     def to_file *emails
-      @response ||= self.api.get_file(self.build_query, *emails)
+      self.file_request(*emails).get_response
     end
 
-    ############
-    #Delgation to Response
-    def method_missing(method, *args, &block)
-      if self.response.class.instance_methods(false).include?(method) || (self.response.respond_to?(:records) && self.response.records.class.instance_methods.include?(method))
-        self.response.send(method, *args, &block)
+    ##
+    #
+    #Delgation to Response through request
+
+    def method_missing(method_name, *args, &block)
+      if Response.instance_methods(false).include?(method_name) || Array.instance_methods(false).include?(method_name)
+        self.request.send(method_name, *args, &block)
       else
         super
       end
     end
 
+    ##
+    #
+    #Make sure respond_to? includes deleged methods
+
+    def respond_to_missing?(method_name, include_private = false)
+      Response.instance_methods(false).include?(method_name) || Array.instance_methods(false).include?(method_name) || super
+    end
+
     def inspect
-      to_inspect = (self.response.respond_to?(:records) ? self.response.records : self.response)
-      to_inspect.respond_to?(:awesome_inspect) ? to_inspect.awesome_inspect : to_inspect.inspect
+      request.inspect
     end
 
     def dup

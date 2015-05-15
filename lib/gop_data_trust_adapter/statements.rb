@@ -7,6 +7,9 @@ require 'gop_data_trust_adapter/statement/limit'
 
 module GopDataTrustAdapter
 
+  ##
+  #
+  # Class that handles all the statements for a given query
   class Statements
 
     attr_reader :select, :where, :group_by, :limit, :query

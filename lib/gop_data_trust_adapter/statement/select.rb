@@ -2,6 +2,10 @@ module GopDataTrustAdapter
 
   module Statement
 
+    ##
+    #
+    # Class that handles the SELECT statement for a
+    # query class.
     class Select < Base
 
       attr_reader :distinct

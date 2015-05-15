@@ -9,9 +9,12 @@ module GopDataTrustAdapter
 
   class Table
 
-    # Can't use * for select, so must present default fields,
-    # or always require select. Used their default fields for
-    # quick search.
+    ##
+    #
+    # Can't use * for select, so must preset default fields,
+    # or always require select. Used DataTrust's default
+    # fields for quick search.
+
     DEFAULT_FIELDS = [
       :firstname, :middlename, :lastname,
       :sex, :dateofbirth, :emailaddress, :phonenumber,
@@ -20,14 +23,23 @@ module GopDataTrustAdapter
       :rnc_regid, :party, :rnccalcparty, :statevoteridnumber
     ]
 
+    ##
+    #
     # Please note for now all numbers in the datatrust
-    # appear to be ints.
+    # appear to be ints. Used for prepared statements
+    # that pass a hash.
+
     TYPE_CONVERSION = {
       :string => GopDataTrustAdapter::Type::String,
       :number => GopDataTrustAdapter::Type::Number,
       :datetime => GopDataTrustAdapter::Type::DateTime,
       :date => GopDataTrustAdapter::Type::Date
     }
+
+    ##
+    #
+    # Used for prepared statements that pass a string
+    # and values, instead of a hash.
 
     CLASS_CONVERSION = {
       DateTime => GopDataTrustAdapter::Type::DateTime,
@@ -36,10 +48,19 @@ module GopDataTrustAdapter
       String => GopDataTrustAdapter::Type::String,
       Numeric => GopDataTrustAdapter::Type::Number
     }
+
+    ##
+    #
+    # If class doesn't inhert from one in the class conversion
+    # use this default instead.
+
     CLASS_CONVERSION_DEFAULT = GopDataTrustAdapter::Type::String
 
+    ##
+    #
     # If I have the table definition, might as well
     # create a whitelist.
+
     COLUMNS = {
       :active => {
         :type => :string
@@ -1683,28 +1704,53 @@ module GopDataTrustAdapter
       },
     }
 
+    ##
+    #
+    # Wrapper for COLUMNS constant.
+
     def self.columns
       COLUMNS
     end
+
+    ##
+    #
+    # Wrapper for TYPE_CONVERSION constant.
 
     def self.type_conversion
       TYPE_CONVERSION
     end
 
+    ##
+    #
+    # Wrapper for CLASS_CONVERSION
+
     def self.class_conversion
       CLASS_CONVERSION
     end
+
+    ##
+    #
+    # Wrapper for CLASS_CONVERSION_DEFAULT
 
     def self.class_conversion_default
       CLASS_CONVERSION_DEFAULT
     end
 
+    ##
+    #
+    # Wrapper for DEFAULT_FIELDS
+
     def self.default_fields
       DEFAULT_FIELDS
     end
 
-    def self.[] _attr
-      OpenStruct.new(COLUMNS[_attr])
+    ##
+    #
+    # Access hash stored in COLUMNS constant with key and return value
+    # as an open struct.
+
+    def self.[] _key
+      OpenStruct.new(COLUMNS[_key])
     end
 
   end

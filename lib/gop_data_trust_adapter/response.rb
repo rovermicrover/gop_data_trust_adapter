@@ -2,6 +2,9 @@ require 'gop_data_trust_adapter/record'
 
 module GopDataTrustAdapter
 
+  ##
+  #
+  # Class that wraps the returned response from DataTrust
   class Response
 
     attr_reader :api, :response, :debug_results,
@@ -48,12 +51,20 @@ module GopDataTrustAdapter
 
     ############
     #Delgation to records
-    def method_missing(method, *args, &block)
-      if self.records.class.instance_methods.include?(method)
-        self.records.send(method, *args, &block)
+    def method_missing(method_name, *args, &block)
+      if self.records.class.instance_methods.include?(method_name)
+        self.records.send(method_name, *args, &block)
       else
         super
       end
+    end
+
+    ##
+    #
+    #Make sure respond_to? includes deleged methods
+
+    def respond_to_missing?(method_name, include_private = false)
+      self.records.class.instance_methods.include?(method_name) || super
     end
 
   end

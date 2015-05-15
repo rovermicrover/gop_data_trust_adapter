@@ -2,6 +2,10 @@ module GopDataTrustAdapter
 
   module Statement
 
+    ##
+    #
+    # Class that handles the LIMIT statement for a
+    # query class.
     class Limit < Base
 
       def initialize *args

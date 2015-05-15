@@ -2,6 +2,10 @@ module GopDataTrustAdapter
 
   module Statement
 
+    ##
+    #
+    # Class that handles the GROUP BY statement for a
+    # query class.
     class GroupBy < Base
 
       def initialize *args

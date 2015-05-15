@@ -2,6 +2,10 @@ module GopDataTrustAdapter
 
   module Statement
 
+    ##
+    #
+    # Class that handles WHERE statements for a
+    # query class.
     class Where < Base
 
       LOGICALOPERATIONS = ["AND", "OR"]
