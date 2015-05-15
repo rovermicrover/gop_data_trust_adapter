@@ -81,7 +81,7 @@ module GopDataTrustAdapter
 
       ##
       #
-      # Wrapper method for http library's get method.
+      # Wrapper method for http library's get method through request object.
 
       def get method, params={}
         Request.new(self, :get, method, params)
@@ -89,7 +89,7 @@ module GopDataTrustAdapter
 
       ##
       #
-      # Wrapper method for http library's post method.
+      # Wrapper method for http library's post method through request object.
 
       def post method, params={}
         Request.new(self, :post, method, params)
@@ -97,7 +97,7 @@ module GopDataTrustAdapter
 
       ##
       #
-      # Wrapper method for http library's put method.
+      # Wrapper method for http library's put method through request object.
 
       def put method, params={}
         Request.new(self, :put, method, params)
@@ -118,7 +118,7 @@ module GopDataTrustAdapter
 
       ##
       #
-      #Make sure respond_to? includes deleged methods
+      #Make sure respond_to? includes delegated methods
 
       def respond_to_missing?(method_name, include_private = false)
         Query.instance_methods(false).include?(method_name) || super
@@ -134,44 +134,45 @@ module GopDataTrustAdapter
       #
       # From Data Trust
       #
-      # Usage
-      #   Raw access to reading from our data warehouse. Intended to be both flexible and simple to use.
-      #   Based upon the token provided, your query will be limited to the fields and geographies you have access to.
-      #   Pages of 5,000 results are returned at a time
-      #   Maximum LIMIT is 50,000. If you'd like to get more than 50,0000 results, please see query_get_file.php
+      # - Usage
+      #   * Raw access to reading from our data warehouse. Intended to be both flexible and simple to use.
+      #   * Based upon the token provided, your query will be limited to the fields and geographies you have access to.
+      #   * Pages of 5,000 results are returned at a time
+      #   * Maximum LIMIT is 50,000. If you'd like to get more than 50,0000 results, please see query_get_file.php
       #
-      # Required Parameters
-      #   ClientToken
-      #   q
-      #     This parameter's value should be specified in DQL (similar to SQL).
-      #     Valid fields can be found below.
-      #     SELECT and LIMIT required. WHERE, SELECT DISTINCT, COUNT(), COUNT(DISTINCT), and GROUP BY are all supported. Note: you cannot SELECT *.
-      #     Utilize single quotes around string comparisons in WHERE statements
-      #     A properly formed call would look like: SELECT firstname,COUNT(*) WHERE ( (stateabbreviation='VA' AND congressionaldistrict='1') OR stateabbreviation='MA' ) AND lastname~'%Smith%' GROUP BY firstname LIMIT 10000
-      #     Allowed operators in a WHERE statement include =, !=, >, >=, <, <=, ~, and !~. The wildcard character for a string comparison using ~ or !~ is %.
-      #     FROM and LEFT JOIN statements are not required (or supported)
-      #     * can only be used within a count
-      #   Call_ID
-      #     If More_Results on a previous request was true, you can specify the Call_ID to continue returning results. This parameter can be specified in the place of 'q'.
+      # - Required Parameters
+      #   * ClientToken
+      #   * q
+      #     - This parameter's value should be specified in DQL (similar to SQL).
+      #     - Valid fields can be found below.
+      #     - SELECT and LIMIT required. WHERE, SELECT DISTINCT, COUNT(), COUNT(DISTINCT), and GROUP BY are all supported. Note: you cannot SELECT *.
+      #     - Utilize single quotes around string comparisons in WHERE statements
+      #     - A properly formed call would look like: SELECT firstname,COUNT(*) WHERE ( (stateabbreviation='VA' AND congressionaldistrict='1') OR stateabbreviation='MA' ) AND lastname~'%Smith%' GROUP BY firstname LIMIT 10000
+      #     - Allowed operators in a WHERE statement include =, !=, >, >=, <, <=, ~, and !~. The wildcard character for a string comparison using ~ or !~ is %.
+      #     - FROM and LEFT JOIN statements are not required (or supported)
+      #     - * can only be used within a count
+      #   * Call_ID
+      #     - If More_Results on a previous request was true, you can specify the Call_ID to continue returning results. This parameter can be specified in the place of 'q'.
       #
-      # Optional Parameters
-      #   format
-      #     JSON (default)
-      #     CSV
-      #     XML
-      #   Dont_Wrap
-      #     returns just the result, not wrapped in a JSON container (not recommended)
+      # - Optional Parameters
+      #   * format
+      #     - JSON (default)
+      #     - CSV
+      #     - XML
+      #   * Dont_Wrap
+      #     - returns just the result, not wrapped in a JSON container (not recommended)
       #
-      # Returns (JSON, unless Dont_Wrap specified)
-      #   Call_ID
-      #   Success
-      #     true or false
-      #   Results
-      #     contains result (depending on format)
-      #   Results_Count
-      #     Number of results returned. For a full count of a LIMITed query, perform a separate query
-      #   More_Results
-      #     true or false
+      # - Returns (JSON, unless Dont_Wrap specified)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
+      #   * Results
+      #     - contains result (depending on format)
+      #   * Results_Count
+      #     - Number of results returned. For a full count of a LIMITed query, perform a separate query
+      #   * More_Results
+      #     - true or false
+
       def query q, params={}
         params = {
           :query => {
@@ -192,35 +193,36 @@ module GopDataTrustAdapter
       #
       # From Data Trust
       #
-      # Usage
-      #   Intended to provide a quick match identifiable information to a subset of Data Trust's voter data.
-      #   Should always return sub-second, and requests can be parallelized to complete batch operations faster.
-      #   Billed in the exact same way as a normal DQL query
-      #   If more than 5 people match your query, only personkeys will be returned
+      # - Usage
+      #   * Intended to provide a quick match identifiable information to a subset of Data Trust's voter data.
+      #   * Should always return sub-second, and requests can be parallelized to complete batch operations faster.
+      #   * Billed in the exact same way as a normal DQL query
+      #   * If more than 5 people match your query, only personkeys will be returned
       #
-      # Required Parameters
-      #   ClientToken
-      #   FirstName
-      #   LastName
-      #   ReturnFields
-      #     Comma delimited
-      #     Valid values: phonenumber, emailaddress, reg_addressline1, reg_addressline2, reg_addressstate, reg_addresszip5, reg_addresszip4, rnc_regid, party, rnccalcparty, statevoteridnumber, firstname, middlename, lastname, phonenumber, emailaddress, dateofbirth, sex
-      #   Limit
-      #     Limit the number of results returned
+      # - Required Parameters
+      #   * ClientToken
+      #   * FirstName
+      #   * LastName
+      #   * ReturnFields
+      #     - Comma delimited
+      #     - Valid values: phonenumber, emailaddress, reg_addressline1, reg_addressline2, reg_addressstate, reg_addresszip5, reg_addresszip4, rnc_regid, party, rnccalcparty, statevoteridnumber, firstname, middlename, lastname, phonenumber, emailaddress, dateofbirth, sex
+      #   * Limit
+      #     - Limit the number of results returned
       #
-      # Optional Parameters
-      #   Reg_AddressZip5
-      #   MiddleName
-      #     or just middle initial
-      #   DateOfBirth
-      #     YYYYMMDD or YYYYMM or YYYY
+      # - Optional Parameters
+      #   * Reg_AddressZip5
+      #   * MiddleName
+      #     - or just middle initial
+      #   * DateOfBirth
+      #     - YYYYMMDD or YYYYMM or YYYY
       #
-      # Returns (JSON)
-      #   Call_ID
-      #   Success
-      #     true or false
-      #   Results
-      #   Results_Count
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
+      #   * Results
+      #   * Results_Count
+
       def fast_match params={}
         dob = (params[:dateofbirth] || params[:date_of_birth])
         opts = {:single_quoted => false}
@@ -239,6 +241,32 @@ module GopDataTrustAdapter
         get 'fast_match.php', params
       end
 
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Must be used when the desired LIMIT is more than 50,000.
+      #   * Must be used in the future, when certain fields are queried.
+      #   * Once a Call_ID is returned, use get_call.php to check the ID. When call['status']='complete', call['reads'][0]['file_url'] will contain the download link for a CSV file.
+      # - Required Parameters
+      #   * ClientToken
+      #   * q
+      #     - Same as query.php
+      # - Optional Parameters
+      #   * format
+      #     - JSON (default)
+      #   * email
+      #     - an email or list of comma-separated emails that should be notified when this query is complete
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
+
       def get_file q, *emails
         params = {
           :query => {
@@ -251,8 +279,27 @@ module GopDataTrustAdapter
         post 'query_get_file.php', params
       end
 
-      #############
-      #Write Methods
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #  * Adds a tag (ElementYear, ElementName, ElementDescription) to a person with PersonKey
+      # - Required Parameters
+      #   * ClientToken
+      #   * PersonKey
+      #   * ElementYear
+      #     - YYYY
+      #   * ElementName
+      #   * ElementDescription
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+
       def add_tag key, params={}
         opts = {:single_quoted => false}
         params = {
@@ -267,6 +314,34 @@ module GopDataTrustAdapter
 
         post 'add_tag.php', params
       end
+
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Adds a contact (mail, email, phone, etc.) to a person with PersonKey
+      # - Required Parameters
+      #   * ClientToken
+      #   * ContactType
+      #   * ContactDisposition
+      #   * ContactDate
+      #   * ContactTime
+      #   * and one of these: TargetPersonKey, TargetEmailKey, TargetPhoneKey, TargetAddressKey
+      # - Optional Parameters
+      #   * StateAbbreviation
+      #   * OfficeName
+      #   * InitiativeName
+      #   * UniverseName
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * ContactKey
+      #   * Success
+      #     - true or false
 
       def add_voter_contact key_type, key, params={}
         opts = {:single_quoted => false}
@@ -293,6 +368,25 @@ module GopDataTrustAdapter
         post 'add_voter_contact.php', params
       end
 
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Sets the primary email for PersonKey to EmailAddress
+      # - Required Parameters
+      #   * ClientToken
+      #   * PersonKey
+      #   * EmailAddress
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
+
       def set_email email, key
         opts = {:single_quoted => false}
         params = {
@@ -304,6 +398,25 @@ module GopDataTrustAdapter
         }
         put 'set_email.php', params
       end
+
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Sets the primary phone number for PersonKey to PhoneNumber
+      # - Required Parameters
+      #   * ClientToken
+      #   * PersonKey
+      #   * PhoneNumber
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
 
       def set_phone phone, key
         opts = {:single_quoted => false}
@@ -317,6 +430,32 @@ module GopDataTrustAdapter
 
         put 'set_phone.php', params
       end
+
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Sets the primary address for PersonKey
+      # - Required Parameters
+      #   * ClientToken
+      #   * AddressType
+      #   * VoterKey
+      #   * AddressLine1
+      #   * AddressCity
+      #   * AddressState
+      #   * AddressZip5
+      # - Optional Parameters
+      #   * AddressLine2
+      #   * AddressZip4
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
 
       def set_address type, key, params={}
         opts = {:single_quoted => false}
@@ -337,6 +476,42 @@ module GopDataTrustAdapter
         put 'set_address.php', params
       end
 
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Raw access to writing to our data warehouse. Meant for advanced users - see above convenience functions for simpler write access.
+      #   * To make a write suggestion (instead of a direct write), make sure that you have the proper permissions and utilize this same API call.
+      # - Required Parameters
+      #   * ClientToken
+      #   * Action
+      #     - Valid actions include insert, update, remove, and insert_and_update
+      #   * PK_Field
+      #     - Primary key field being operated on
+      # - Optional
+      #   * Call_ID
+      #     - If specified, continues bundling writes together
+      #   * PK_ID
+      #     - Only specified for update/remove
+      #   * Values
+      #     - Only specified for updates, JSON field/value pairs
+      #   * Leave_Open
+      #     - valid values are 0 and 1
+      #     - For use when you plan to re-use a returned Call_ID. Note that writes in this call will not be committed until closed.
+      #   * Rationale
+      #     - required for write suggestions
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #     - true or false
+      #   * PK_ID
+      #     - contains modified primary key ID (or reference if this was an insert and hasn't been written yet, prefixed with "ref_")
+
       def direct_write action, field, params={}
         opts = {:single_quoted => false}
         params = {
@@ -355,7 +530,27 @@ module GopDataTrustAdapter
         put 'direct_write.php', params
       end
 
-      def debug call_id
+      ##
+      #
+      # Follows DataTrust docs but all params and attributes are now down-cased symbols
+      #
+      # So "FirstName" becomes :firstname
+      #
+      # From Data Trust
+      #
+      # - Usage
+      #   * Find information about, or change, token information
+      #   * Organization tokens cannot be modified through this API, only returned
+      # - Required Parameters
+      #   * ClientToken
+      #   * Call_ID
+      # - Returns (JSON)
+      #   * Call_ID
+      #   * Success
+      #   * Results
+      #     - Use a json parser like http://json.parser.online.fr/ to make each result "prettier"
+      #   * Results_Count
+      def get_call call_id
         opts = {:single_quoted => false}
         params = {
           :query => {

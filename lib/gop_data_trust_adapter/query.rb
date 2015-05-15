@@ -6,6 +6,7 @@ module GopDataTrustAdapter
   ##
   #
   # Class that handles the actually building of the quries
+
   class Query
 
     attr_reader :api, :statements

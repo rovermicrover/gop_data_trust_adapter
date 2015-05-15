@@ -4,8 +4,10 @@ module GopDataTrustAdapter
 
     class Date < Base
 
-      #################
-      # Convert Values to Date Object
+      ##
+      #
+      # Convert Value to Date Object.
+
       def sanitize
 
         case self.value
@@ -22,6 +24,12 @@ module GopDataTrustAdapter
         end
 
       end
+
+      ##
+      #
+      # Convert Date object to string, make sure
+      # to use correct format, and then single
+      # quote the result.
 
       def safe_value
         unless self.value.nil?

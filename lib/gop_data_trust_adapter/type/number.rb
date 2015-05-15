@@ -4,13 +4,20 @@ module GopDataTrustAdapter
 
     class Number < Base
 
-      #################
-      # Force all values to ints
+      ##
+      #
+      # Force all values to Integer
+
       def sanitize
 
         @value = self.value.to_i
 
       end
+
+      ##
+      #
+      # Convert Integer object to string, don't
+      # single quote.
 
       def safe_value
         unless self.value.nil?

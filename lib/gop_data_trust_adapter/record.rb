@@ -3,6 +3,7 @@ module GopDataTrustAdapter
   ##
   #
   # Class that wraps a returned record from DataTrust
+
   class Record
 
     attr_reader :attributes, :api
@@ -18,8 +19,10 @@ module GopDataTrustAdapter
       end
     end
 
-    ############
-    #Delgation to attributes
+    ##
+    #
+    #Delegation to attributes
+
     def method_missing(method, *args, &block)
       if self.attributes[method]
         self.attributes[method].value

@@ -5,6 +5,7 @@ module GopDataTrustAdapter
   ##
   #
   # Class that wraps the returned response from DataTrust
+
   class Response
 
     attr_reader :api, :response, :debug_results,
@@ -33,9 +34,14 @@ module GopDataTrustAdapter
       end
     end
 
+    ##
+    #
+    # If there is an error on response retrieve
+    # info on the failed call from the DataTrust.
+
     def debug
-      if debug_results.nil? && !@error.nil?
-        api.debug(self.call_id)
+      if !@error.nil?
+        api.get_call(self.call_id)
       else
         nil
       end
@@ -49,8 +55,10 @@ module GopDataTrustAdapter
       !success? || !error.nil?
     end
 
-    ############
-    #Delgation to records
+    ##
+    #
+    #Delegation to records.
+
     def method_missing(method_name, *args, &block)
       if self.records.class.instance_methods.include?(method_name)
         self.records.send(method_name, *args, &block)
@@ -61,7 +69,7 @@ module GopDataTrustAdapter
 
     ##
     #
-    #Make sure respond_to? includes deleged methods
+    #Make sure respond_to? includes delegation methods.
 
     def respond_to_missing?(method_name, include_private = false)
       self.records.class.instance_methods.include?(method_name) || super
