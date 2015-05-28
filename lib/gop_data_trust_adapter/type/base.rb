@@ -61,7 +61,7 @@ module GopDataTrustAdapter
       # single quote it.
 
       def safe_value
-        self.single_quoter_switch(self.value.to_s)
+        self.single_quoter_switch(self.value)
       end
 
       ##
