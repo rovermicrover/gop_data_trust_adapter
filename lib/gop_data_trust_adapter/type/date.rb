@@ -12,13 +12,25 @@ module GopDataTrustAdapter
 
         case self.value
         when ::Numeric
-          @value = ::Time.at(self.value).to_date
+          if self.format == :number
+            @value = ::Date.strptime(self.value.to_s, '%Y%m%d')
+          else
+            @value = ::Time.at(self.value).to_date
+          end
         when ::String
-          @value = ::Date.strptime(self.value, '%Y-%m-%d')
+          if self.value.eql?("")
+            @value = nil
+          elsif self.format == :no_dash
+            @value = ::Date.strptime(self.value.gsub("-", ""), '%Y%m%d')
+          else
+            @value = ::Date.strptime(self.value, '%Y-%m-%d')
+          end
         when ::Time, ::DateTime
           @value = self.value.to_date
         when ::Date
           # Do Nothing in Correct Format
+        when NilClass
+          # Do Nothing Keep Nil
         else
           @value = ::Date.today
         end
@@ -32,12 +44,17 @@ module GopDataTrustAdapter
       # quote the result.
 
       def safe_value
-        unless self.value.nil?
-          if self.format == :no_dash
-            result = self.value.strftime("%Y%m%d")
-          else
-            result = self.value.strftime("%Y-%m-%d")
-          end
+        if self.value.nil?
+          result = ""
+        elsif self.format == :no_dash || self.format == :number
+          result = self.value.strftime("%Y%m%d")
+        else
+          result = self.value.strftime("%Y-%m-%d")
+        end
+
+        if self.format == :number
+          result.to_i.to_s
+        else
           self.single_quoter_switch(result)
         end
       end

@@ -242,6 +242,10 @@ class GopDataTrustAdapterTest < Minitest::Test
     # Make sure that a @query for a attribute creates the create sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John", :lastname => "Smith")
     assert_query_contains("WHERE firstname = 'John' AND lastname = 'Smith' LIMIT 5")
+
+    # Make sure that a @query for a attribute creates the create sql
+    @query = GopDataTrustAdapter::Api.where(:firstname => nil)
+    assert_query_contains("WHERE firstname = '' LIMIT 5")
   end
 
   def test_query_where_of_non_standard_object
@@ -334,7 +338,7 @@ class GopDataTrustAdapterTest < Minitest::Test
     # but have same @query string.
     @query3 = GopDataTrustAdapter::Api.where(:firstname => "John")
     assert @query1.build_query.eql?(@query3.build_query)
-    assert !@query1.object_id.eql?(@query3.object_id)
+    assert !@query1.equal?(@query3)
   end
 
   def test_query_to_file
@@ -389,6 +393,12 @@ class GopDataTrustAdapterTest < Minitest::Test
 
     @query = GopDataTrustAdapter::Api.where("age = ?", BigDecimal.new("5.0"))
     assert_query_contains("WHERE age = 5 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:age => "")
+    assert_query_contains("WHERE age = 0 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:age => nil)
+    assert_query_contains("WHERE age = 0 LIMIT 5")
   end
 
   def test_query_date
@@ -431,6 +441,24 @@ class GopDataTrustAdapterTest < Minitest::Test
 
     @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedate => Object.new)
     assert_query_contains("WHERE ah_rowcreatedate = '" + DateTime.now.strftime("%Y-%m-%d"))
+
+    @query = GopDataTrustAdapter::Api.where(:registrationdate => Date.new(2001,2,3))
+    assert_query_contains("WHERE registrationdate = 20010203 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:registrationdate => 20010203)
+    assert_query_contains("WHERE registrationdate = 20010203 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where("registrationdate = ?",  [Date.new(2001,2,3), :number])
+    assert_query_contains("WHERE registrationdate = 20010203 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where("registrationdate = ?",  [20010203, :number])
+    assert_query_contains("WHERE registrationdate = 20010203 LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedate => '')
+    assert_query_contains("WHERE ah_rowcreatedate = '' LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedate => nil)
+    assert_query_contains("WHERE ah_rowcreatedate = '' LIMIT 5")
   end
 
   def test_query_datetime
@@ -464,6 +492,12 @@ class GopDataTrustAdapterTest < Minitest::Test
 
     @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedatetime => Object.new)
     assert_query_contains("WHERE ah_rowcreatedatetime = '" + DateTime.now.strftime("%Y-%m-%d"))
+
+    @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedatetime => '')
+    assert_query_contains("WHERE ah_rowcreatedatetime = '' LIMIT 5")
+
+    @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedatetime => nil)
+    assert_query_contains("WHERE ah_rowcreatedatetime = '' LIMIT 5")
   end
   ##############
 

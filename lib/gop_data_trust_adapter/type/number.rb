@@ -20,9 +20,7 @@ module GopDataTrustAdapter
       # single quote.
 
       def safe_value
-        unless self.value.nil?
-          self.value.to_s
-        end
+        self.value.to_i.to_s
       end
 
     end

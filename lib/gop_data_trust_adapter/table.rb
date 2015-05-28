@@ -153,7 +153,8 @@ module GopDataTrustAdapter
         :type => :string
       },
       :closeddate => {
-        :type => :string
+        :type => :date,
+        :format => :no_dash
       },
       :con_ageinputindividualdefaultto1stindiv => {
         :type => :string
@@ -1201,7 +1202,7 @@ module GopDataTrustAdapter
         :type => :string
       },
       :mailingaddressncoadate => {
-        :type => :string
+        :type => :date
       },
       :mediamarket => {
         :type => :string
@@ -1250,6 +1251,9 @@ module GopDataTrustAdapter
       },
       :officename => {
         :type => :string
+      },
+      :org_rowcreatedatetime => {
+        :type => :datetime
       },
       :park => {
         :type => :string
@@ -1375,11 +1379,11 @@ module GopDataTrustAdapter
         :type => :string
       },
       :registrationcloseddate => {
-        :type => :string
+        :type => :date
       },
       :registrationdate => {
-        :type => :number,
-        :format => :no_dash
+        :type => :date,
+        :format => :number
       },
       :rnc_regid => {
         :type => :string

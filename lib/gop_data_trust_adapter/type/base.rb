@@ -13,13 +13,16 @@ module GopDataTrustAdapter
           options[:value] = args
           args = options
         end
-        self.value = args[:value]
+
         @format = (args[:format] || :default)
         if args[:single_quoted].nil?
           @single_quoted = true
         else
           @single_quoted = args[:single_quoted]
         end
+
+        # This most go last because value relies on format to be set
+        self.value = args[:value]
       end
 
       def self.safe_value args={}, options={}
@@ -31,11 +34,9 @@ module GopDataTrustAdapter
       # Set value and then sanitize
 
       def value= _value
-        unless _value.nil?
-          @value = _value
-          self.sanitize
-          @value
-        end
+        @value = _value
+        self.sanitize
+        @value
       end
 
       ###
@@ -60,9 +61,7 @@ module GopDataTrustAdapter
       # single quote it.
 
       def safe_value
-        unless self.value.nil?
-          self.single_quoter_switch(self.value.to_s)
-        end
+        self.single_quoter_switch(self.value.to_s)
       end
 
       ##
