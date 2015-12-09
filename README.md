@@ -7,16 +7,12 @@ An ActiveRecord like adapter for the [GOP Data Trust's Direct API](https://linco
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'gop_data_trust_adapter'
+gem 'gop_data_trust_adapter', :git => 'https://github.com:rovermicrover/gop_data_trust_adapter.git'
 ```
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install gop_data_trust_adapter
 
 ## Usage
 
