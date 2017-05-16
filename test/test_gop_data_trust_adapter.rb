@@ -8,14 +8,7 @@ require 'minitest/autorun'
 require 'mocha/mini_test'
 require 'gop_data_trust_adapter'
 
-# All sleep statements are to make sure we don't
-# hit a rate limit while testing. They don't currently
-# have one on the test server, but better safe than sorry.
-#
-# All requests to them also will fail because no token is
-# present here for secruity reasons.
-#
-# So, all response testing is done based on previous results.
+# All response testing is done based on previous results.
 class GopDataTrustAdapterTest < Minitest::Test
 
   # def initialize(name = nil)
@@ -33,12 +26,12 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def get_results
-    # Query mean's it a get or put
+    # no @query means it is a get or put
     if !@query.nil?
       @target = @query
       message_target = :query
     elsif !@post.nil?
-    # Post mean's its a post
+    # post mean's its a post
       @target = @post
       message_target = :body
     end
@@ -94,8 +87,7 @@ class GopDataTrustAdapterTest < Minitest::Test
   # Query TESTS
   def test_api_delegation
     # Method that doesn't exist on response or it's
-    # records attribute shouldn't cause a no method error.
-    # When called from api.
+    # records attribute should cause a no method error.
     no_method_error = false
 
     begin
@@ -125,7 +117,7 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert @query.is_a? GopDataTrustAdapter::Query
 
     # Should make request because query has no method length, but response's
-    # record response to it. Thus create a request, make it, then delegate
+    # record responses to it. Thus create a request, make it, then delegate
     # the method to the response object, which in return delegates it
     # to it's records, ie an array for now.
     assert_equal 0, @query.length
@@ -162,8 +154,7 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert_equal true, @request.fail?
 
     # Method that doesn't exist on response or it's
-    # records attribute shouldn't cause a no method error.
-    # When called from request.
+    # records attribute should cause a no method error.
     no_method_error = false
 
     begin
@@ -188,7 +179,7 @@ class GopDataTrustAdapterTest < Minitest::Test
     @response = GopDataTrustAdapter::Response.new(GopDataTrustAdapter::Api, SUCCESSFUL_RESPONSE)
     assert @response.is_a? GopDataTrustAdapter::Response
 
-    # Method that doesn't exist on response or records shoudl result
+    # Method that doesn't exist on response or records should result
     # in a no method error.
     no_method_error = false
     begin
@@ -235,93 +226,82 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_query_where
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for an attribute creates the create sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John")
     assert_query_contains("WHERE firstname = 'John' LIMIT 5")
 
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for attributes creates the create sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John", :lastname => "Smith")
     assert_query_contains("WHERE firstname = 'John' AND lastname = 'Smith' LIMIT 5")
 
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for a nil attribute creates the create sql
     @query = GopDataTrustAdapter::Api.where(:firstname => nil)
     assert_query_contains("WHERE firstname = '' LIMIT 5")
   end
 
   def test_query_where_of_non_standard_object
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query with a prepared statement creates the correct sql
     @query = GopDataTrustAdapter::Api.where("firstname = ?", Object.new)
     assert_query_contains("WHERE firstname = 'Object:")
   end
 
   def test_query_group_by
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for a attribute creates the create sql with a group by
     @query = GopDataTrustAdapter::Api.count(:firstname).group_by(:firstname)
     assert_query_contains("GROUP BY firstname LIMIT 5")
 
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for a attribute creates the create sql with multiple group by
     @query = GopDataTrustAdapter::Api.count(:firstname).group_by(:firstname, :lastname)
     assert_query_contains("GROUP BY firstname,lastname LIMIT 5")
   end
 
   def test_query_count
-    # Make sure that a @query for a attribute creates the create sql
+    # Make sure that a @query for a attribute creates the create sql for count for an attriubte
     @query = GopDataTrustAdapter::Api.count(:firstname).group_by(:firstname)
     assert_query_contains("SELECT COUNT(firstname)")
 
-    # Make sure that a @query for a attribute creates the create sql
     @query = GopDataTrustAdapter::Api.count(:firstname, :lastname).group_by(:firstname)
     assert_query_contains("SELECT COUNT(firstname),COUNT(lastname)")
 
-    # Make sure that a @query for a attribute creates the create sql
     @query = GopDataTrustAdapter::Api.select(:firstname).count(:firstname, :lastname).group_by(:firstname)
     assert_query_contains("SELECT firstname,COUNT(firstname),COUNT(lastname)")
 
-    # Make sure that a @query for a attribute creates the create sql
     @query = GopDataTrustAdapter::Api.count(:firstname, :lastname).select(:firstname).group_by(:firstname)
     assert_query_contains("SELECT COUNT(firstname),COUNT(lastname),firstname")
 
-    # Make sure that count creates the correct sql
+    # Make sure that a @query for a attribute creates the create sql for count for all
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*")
     assert_query_contains("SELECT COUNT(*) WHERE")
 
-    # Make sure that count and select creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*").select("lastname")
     assert_query_contains("SELECT COUNT(*),lastname WHERE")
 
-    # Make sure that two counts creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("firstname").count("lastname")
     assert_query_contains("SELECT COUNT(firstname),COUNT(lastname) WHERE")
   end
 
   def test_query_or
-    # Make sure that an or @query creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").or.where(:firstname => "Joan")
     assert_query_contains("WHERE firstname = 'John' OR firstname = 'Joan' LIMIT 5")
   end
 
   def test_query_limit
-    # Make sure that an or @query creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").limit(10)
     assert_query_contains("WHERE firstname = 'John' LIMIT 10")
   end
 
   def test_query_select
-    # Make sure that select creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").select("firstname")
     assert_query_contains("SELECT firstname WHERE")
 
-    # Make sure that two select creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").select("firstname").select("lastname")
     assert_query_contains("SELECT firstname,lastname WHERE")
   end
 
   def test_query_select_distinct
-    # Make sure that select then distinct creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").select("firstname").distinct
     assert_query_contains("SELECT DISTINCT firstname WHERE")
 
-    # Make sure that distinct then select creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").distinct.select("firstname")
     assert_query_contains("SELECT DISTINCT firstname WHERE")
   end
@@ -372,6 +352,7 @@ class GopDataTrustAdapterTest < Minitest::Test
 
   def test_query_number
     # Make sure that a @query for a attribute creates the create sql
+    # for all formating/types of numbers
     @query = GopDataTrustAdapter::Api.where(:age => "5")
     assert_query_contains("WHERE age = 5 LIMIT 5")
 
@@ -402,6 +383,7 @@ class GopDataTrustAdapterTest < Minitest::Test
 
   def test_query_date
     # Make sure that a @query for a attribute creates the create sql
+    # for all formating/types of dates
     @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedate => '2001-02-03')
     assert_query_contains("WHERE ah_rowcreatedate = '2001-02-03' LIMIT 5")
 
@@ -462,6 +444,7 @@ class GopDataTrustAdapterTest < Minitest::Test
 
   def test_query_datetime
     # Make sure that a @query for a attribute creates the create sql
+    # for all formatings/types of datetimes
     @query = GopDataTrustAdapter::Api.where(:ah_rowcreatedatetime => '2001-02-03 11:24:34.100')
     assert_query_contains("WHERE ah_rowcreatedatetime = '2001-02-03 11:24:34.100' LIMIT 5")
 
