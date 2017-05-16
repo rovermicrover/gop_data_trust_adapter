@@ -25,11 +25,19 @@ module GopDataTrustAdapter
 
     ##
     #
-    # Wrapper method for http library's request method.
+    # Get Response and return response object
 
     def get_response
-      _response = HTTParty.send(self.https_method, *self.http_parse_args)
-      GopDataTrustAdapter::Response.new(self.api, _response)
+      GopDataTrustAdapter::Response.new(self.api, get_response!)
+    end
+
+    ##
+    #
+    # Wrapper method for http library's request method.
+    # Allows For Easiy Stubbing
+
+    def get_response!
+      HTTParty.send(self.https_method, *self.http_parse_args)
     end
 
     def response

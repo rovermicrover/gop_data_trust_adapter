@@ -36,19 +36,19 @@ module GopDataTrustAdapter
 
     def select *columns
       the_dup = self.dup
-      the_dup.statements.select.add_select *columns
+      the_dup.statements.select.add_select(*columns)
       the_dup
     end
 
     def count *columns
       the_dup = self.dup
-      the_dup.statements.select.add_count *columns
+      the_dup.statements.select.add_count(*columns)
       the_dup
     end
 
     def group_by *columns
       the_dup = self.dup
-      the_dup.statements.group_by.add_grouping *columns
+      the_dup.statements.group_by.add_grouping(*columns)
       the_dup
     end
 

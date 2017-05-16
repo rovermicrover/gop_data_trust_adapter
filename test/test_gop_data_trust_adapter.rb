@@ -5,6 +5,7 @@ SimpleCov.start do
 end
 
 require 'minitest/autorun'
+require 'mocha/mini_test'
 require 'gop_data_trust_adapter'
 
 # All sleep statements are to make sure we don't
@@ -28,6 +29,7 @@ class GopDataTrustAdapterTest < Minitest::Test
 
   def setup
     connect
+    @query = nil
   end
 
   def get_results
@@ -114,6 +116,7 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_query_delegation
+    stub_return_for_get_response!
 
     # A method called on api that is an instance method on query should
     # result in a query being created and returned with passed method
@@ -127,7 +130,6 @@ class GopDataTrustAdapterTest < Minitest::Test
     # to it's records, ie an array for now.
     assert_equal 0, @query.length
     assert_equal true, @query.fail?
-    sleep 1
 
     # Method that doesn't exist on response or records should result
     # in a no method error.
@@ -151,13 +153,13 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_request_delegation
+    stub_return_for_get_response!
 
     # Basic api method should result in a request object
     @request = GopDataTrustAdapter::Api.set_email("foobar@example.com","Foobar")
     assert @request.is_a? GopDataTrustAdapter::Request
     # Any undified method call should result in retriving the response
     assert_equal true, @request.fail?
-    sleep 1
 
     # Method that doesn't exist on response or it's
     # records attribute shouldn't cause a no method error.
@@ -205,33 +207,31 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_reload_returns_new_response
+    stub_return_for_get_response!
+
     @query = GopDataTrustAdapter::Api.where(:firstname => "John")
 
     @response1 = @query.response
     assert_equal @response1, @query.response
-    sleep 1
 
     @response2 = @query.reload
     refute_equal @response1, @query.response
     refute_equal @response1, @response2
-    sleep 1
 
     @request = GopDataTrustAdapter::Api.set_email("foobar@example.com","Foobar")
     assert @request.is_a? GopDataTrustAdapter::Request
 
     @response1 = @request.response
     assert_equal @response1, @request.response
-    sleep 1
 
     @response2 = @request.reload
     refute_equal @response1, @request.response
     refute_equal @response1, @response2
-    sleep 1
   end
 
   def test_query_inspect
+    stub_return_for_get_response!
     assert GopDataTrustAdapter::Api.where(:firstname => "John").inspect
-    sleep 1
   end
 
   def test_query_where
@@ -280,6 +280,18 @@ class GopDataTrustAdapterTest < Minitest::Test
     # Make sure that a @query for a attribute creates the create sql
     @query = GopDataTrustAdapter::Api.count(:firstname, :lastname).select(:firstname).group_by(:firstname)
     assert_query_contains("SELECT COUNT(firstname),COUNT(lastname),firstname")
+
+    # Make sure that count creates the correct sql
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*")
+    assert_query_contains("SELECT COUNT(*) WHERE")
+
+    # Make sure that count and select creates the correct sql
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*").select("lastname")
+    assert_query_contains("SELECT COUNT(*),lastname WHERE")
+
+    # Make sure that two counts creates the correct sql
+    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("firstname").count("lastname")
+    assert_query_contains("SELECT COUNT(firstname),COUNT(lastname) WHERE")
   end
 
   def test_query_or
@@ -302,20 +314,6 @@ class GopDataTrustAdapterTest < Minitest::Test
     # Make sure that two select creates the correct sql
     @query = GopDataTrustAdapter::Api.where(:firstname => "John").select("firstname").select("lastname")
     assert_query_contains("SELECT firstname,lastname WHERE")
-  end
-
-  def test_query_count
-    # Make sure that count creates the correct sql
-    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*")
-    assert_query_contains("SELECT COUNT(*) WHERE")
-
-    # Make sure that count and select creates the correct sql
-    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("*").select("lastname")
-    assert_query_contains("SELECT COUNT(*),lastname WHERE")
-
-    # Make sure that two counts creates the correct sql
-    @query = GopDataTrustAdapter::Api.where(:firstname => "John").count("firstname").count("lastname")
-    assert_query_contains("SELECT COUNT(firstname),COUNT(lastname) WHERE")
   end
 
   def test_query_select_distinct
@@ -342,6 +340,8 @@ class GopDataTrustAdapterTest < Minitest::Test
   end
 
   def test_query_to_file
+    stub_return_for_get_response!
+
     @query = GopDataTrustAdapter::Api.where(:firstname => "John")
 
     @file_query = @query.to_file
@@ -349,7 +349,6 @@ class GopDataTrustAdapterTest < Minitest::Test
 
     assert_equal true, @file_query.fail?
     refute_equal @query, @file_query
-    sleep 1
   end
 
   def test_sql_injection_escape
@@ -509,6 +508,11 @@ class GopDataTrustAdapterTest < Minitest::Test
   UNSUCCESSFUL_RESPONSE = OpenStruct.new(:body => '{"Call_ID":"5553bc77634816d44403d4e7","Success":false,"Error":"Unparseable DQL statement! Take a look at examples at https:\/\/lincoln.gopdatatrust.com\/v2\/docs\/"}')
   INTERNAL_ERROR_RESPONSE= OpenStruct.new(:body => '{"Call_ID":"5553be65634816d44403d4e8","Success":false,"Error":"Internal read error."}')
 
+
+  def stub_return_for_get_response!
+    GopDataTrustAdapter::Request.any_instance.stubs(:get_response!).returns(UNSUCCESSFUL_RESPONSE)
+  end
+
   def assert_debug_succesful call_id
     @debug = @response.debug
     assert @debug
@@ -552,7 +556,7 @@ class GopDataTrustAdapterTest < Minitest::Test
   # This is a real response form the DataTrust
   SUCCESSFUL_RESPONSE_RECORDS = OpenStruct.new(:body => '{"Call_ID":"5553bd04634816da4403d4e8","Success":true,"Results":[{"firstname":"RUTH","lastname":"WISSER"},{"firstname":"LESLIE","lastname":"REYES"},{"firstname":"DAVID","lastname":"PARKER"},{"firstname":"GEORGE","lastname":"KNITTEL"},{"firstname":"LIONEL","lastname":"PONX"}],"Results_Count":5,"More_Results":false}')
 
-  def test_response_success
+  def test_response_with_records_success
     @response = GopDataTrustAdapter::Response.new(GopDataTrustAdapter::Api, SUCCESSFUL_RESPONSE_RECORDS)
 
     @record = @response.records[0]
@@ -560,7 +564,7 @@ class GopDataTrustAdapterTest < Minitest::Test
     assert @record.is_a? GopDataTrustAdapter::Record
     assert_equal "RUTH", @record.firstname
     assert_equal "WISSER", @record.lastname
-    assert_equal nil, @record.age
+    assert_nil @record.age
 
     no_method_error = false
 
