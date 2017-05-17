@@ -22,9 +22,10 @@ This gem was created to mimic Active Record's behavior
 
 1. Fork it ( https://github.com/rovermicrover/gop_data_trust_adapter/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Make your changes.
-4. Write any additional test to cover your changes.
-5. Commit your changes (`git commit -am 'Add some feature'`)
-6. Run test and insure they all pass (`rake`)
-7. Push to the branch (`git push origin my-new-feature`)
-8. Create a new Pull Request
+3. Install dependencies (`bundle install`)
+4. Make your changes.
+5. Write any additional test to cover your changes.
+6. Commit your changes (`git commit -am 'Add some feature'`)
+7. Run test and insure they all pass (`rake`)
+8. Push to the branch (`git push origin my-new-feature`)
+9. Create a new Pull Request
