@@ -1,6 +1,8 @@
 # GopDataTrustAdapter
 
-An ActiveRecord like adapter for the [GOP Data Trust's Direct API](https://lincoln.gopdatatrust.com/v2/docs/).
+An ActiveRecord like adapter for the ~~[GOP Data Trust's Direct API](https://lincoln.gopdatatrust.com/v2/docs/).~~
+
+**Note we are lacking their latest documentation, and the old link is down.**
 
 ## Installation
 
